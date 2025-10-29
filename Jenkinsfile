@@ -3,6 +3,8 @@ pipeline {
 
     environment {
         IMAGE_NAME = "flask-app"
+        DEPLOY_SERVER = "deploy@your-server-ip"       // remote server SSH user and IP
+        SSH_CREDENTIALS = "ssh-server-key"           // Jenkins SSH credentials ID
     }
 
     stages {
@@ -32,6 +34,23 @@ pipeline {
                 '''
             }
         }
+
+        stage('Deploy to Server') {
+            steps {
+                echo "📡 Deploying Docker container to remote server..."
+                sshagent([SSH_CREDENTIALS]) {
+                    sh """
+                    ssh -o StrictHostKeyChecking=no ${DEPLOY_SERVER} '
+                        docker stop ${IMAGE_NAME} || true
+                        docker rm ${IMAGE_NAME} || true
+                        docker pull ${IMAGE_NAME}:${BUILD_NUMBER} || true
+                        docker run -d -p 5000:5000 --name ${IMAGE_NAME} ${IMAGE_NAME}:${BUILD_NUMBER}
+                        echo "✅ Deployment completed on remote server"
+                    '
+                    """
+                }
+            }
+        }
     }
 
     post {
@@ -39,10 +58,11 @@ pipeline {
             echo "🏁 Pipeline finished."
         }
         success {
-            echo "✅ Build successful!"
+            echo "✅ Build and deployment successful!"
         }
         failure {
-            echo "❌ Build failed. Please check logs."
+            echo "❌ Pipeline failed. Please check logs."
         }
     }
 }
+
