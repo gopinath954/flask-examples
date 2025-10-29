@@ -18,7 +18,6 @@ flask
 greenlet==1.0.0 ; python_version >= '3'
 itsdangerous==1.1.0
 jinja2==2.11.3
-jsmin==2.2.2
 
 rjsmin
 
