@@ -17,7 +17,7 @@ pipeline {
         stage('Build Docker Image') {
             steps {
                 echo "🐳 Building Docker image..."
-                dir('template') { // move into folder with Dockerfile and app.py
+                dir('template') { // folder with Dockerfile and app.py
                     sh "docker build -t ${IMAGE_NAME}:${BUILD_NUMBER} ."
                 }
             }
