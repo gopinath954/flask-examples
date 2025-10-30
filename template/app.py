@@ -44,7 +44,7 @@ def index():
 @app.context_processor
 def inject_info():
     foo = 'I am foo.'
-    return dict(foo=foo)  # equal to: return {'foo': foo}
+    return dict(foo=foo)
 
 
 # register template global function
@@ -62,9 +62,7 @@ def musical(s):
 # register template test
 @app.template_test()
 def baz(n):
-    if n == 'baz':
-        return True
-    return False
+    return n == 'baz'
 
 
 @app.route('/watchlist2')
@@ -89,3 +87,9 @@ def page_not_found(e):
 @app.errorhandler(500)
 def internal_server_error(e):
     return render_template('errors/500.html'), 500
+
+
+# ✅ Fix for Docker: bind to all interfaces
+if __name__ == "__main__":
+    app.run(host="0.0.0.0", port=5000, debug=True)
+
