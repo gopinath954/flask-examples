@@ -3,6 +3,7 @@ pipeline {
 
     environment {
         IMAGE_NAME = "flask-app"
+        CONTAINER_NAME = "flask"
     }
 
     stages {
@@ -16,32 +17,35 @@ pipeline {
         stage('Build Docker Image') {
             steps {
                 echo "🐳 Building Docker image..."
-                sh "docker build -t ${IMAGE_NAME}:${BUILD_NUMBER} ."
+                dir('template') { // move into folder with Dockerfile and app.py
+                    sh "docker build -t ${IMAGE_NAME}:${BUILD_NUMBER} ."
+                }
             }
         }
 
-        stage('Run Docker Container (Test)') {
+        stage('Stop Previous Container') {
             steps {
-                echo "🚀 Running container for testing..."
-                sh '''
-                    docker stop ${IMAGE_NAME} || true
-                    docker rm ${IMAGE_NAME} || true
-                    docker run -d -p 5000:5000 --name ${IMAGE_NAME} ${IMAGE_NAME}:${BUILD_NUMBER}
-                    sleep 5
-                    echo "✅ Flask app is running on port 5000"
-                '''
+                echo "🛑 Stopping any previous container..."
+                sh """
+                    docker stop ${CONTAINER_NAME} || true
+                    docker rm ${CONTAINER_NAME} || true
+                """
             }
         }
 
-        stage('Deployment (Local Server)') {
+        stage('Run Docker Container') {
             steps {
-                echo "📡 Deploying Docker container locally..."
-                sh '''
-                    docker stop ${IMAGE_NAME} || true
-                    docker rm ${IMAGE_NAME} || true
-                    docker run -d -p 5000:5000 --name ${IMAGE_NAME} ${IMAGE_NAME}:${BUILD_NUMBER}
-                    echo "✅ Deployment completed on Jenkins server"
-                '''
+                echo "🚀 Running Flask Docker container..."
+                sh """
+                    docker run -d -p 5000:5000 --name ${CONTAINER_NAME} ${IMAGE_NAME}:${BUILD_NUMBER}
+                """
+            }
+        }
+
+        stage('Verify Deployment') {
+            steps {
+                echo "🔍 Checking container status..."
+                sh "docker ps | grep ${CONTAINER_NAME}"
             }
         }
     }
@@ -51,10 +55,10 @@ pipeline {
             echo "🏁 Pipeline finished."
         }
         success {
-            echo "✅ Build and deployment successful!"
+            echo "✅ Flask app deployed successfully!"
         }
         failure {
-            echo "❌ Pipeline failed. Check logs."
+            echo "❌ Pipeline failed. Check the logs."
         }
     }
 }
